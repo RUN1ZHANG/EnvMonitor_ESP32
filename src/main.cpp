@@ -22,9 +22,12 @@ float sound;
 float humidity;
 float temperature;
 String jsonData;
-const char* ssid = "Xiaomi 14";
+const char* ssid = "Ax3000T";
 const char* password = "123zr123";
-const char* serverUrl = "http://192.168.138.188:3232/data"; // 服务器地址（局域网）
+const char* serverUrl = "http://192.168.31.95:3232/data"; // 服务器地址（局域网）
+// const char* ssid = "Xiaomi 14";
+// const char* password = "123zr123";
+// const char* serverUrl = "http://192.168.138.188:3232/data"; // Macbook地址（连接Xiaomi 14）
 DHT dht(DHT_DATA_PIN,DHT11);
 Adafruit_MPU6050 mpu;
 Adafruit_SSD1306 display = Adafruit_SSD1306(128, 64, &Wire);
