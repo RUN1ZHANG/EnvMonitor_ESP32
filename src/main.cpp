@@ -7,6 +7,8 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <Ticker.h>
+#include <ESPAsyncWebServer.h>
+#include <AsyncTCP.h>
 
 #define LIGHT_ADC_PIN            33
 #define SOUND_ADC_PIN            32
@@ -23,16 +25,17 @@ float sound;
 int humidity;
 float temperature;
 sensors_event_t a, g, temp;
-// const char* ssid = "Ax3000T";
-// const char* password = "123zr123";
-// const char* serverUrl = "http://192.168.31.95:3232/data"; // 服务器地址（局域网）
-const char* ssid = "Xiaomi 14";
+const char* ssid = "Ax3000T";
 const char* password = "123zr123";
-const char* serverUrl = "http://192.168.138.188:3232/data"; // Macbook地址（连接Xiaomi 14）
+const char* serverUrl = "http://192.168.31.95:3232/data"; // 服务器地址（局域网）
+// const char* ssid = "Xiaomi 14";
+// const char* password = "123zr123";
+// const char* serverUrl = "http://192.168.138.188:3232/data"; // Macbook地址（连接Xiaomi 14）
 DHT dht(DHT_DATA_PIN,DHT11);
 Adafruit_MPU6050 mpu;
 Adafruit_SSD1306 display = Adafruit_SSD1306(128, 64, &Wire);
-
+AsyncWebServer server(80);
+AsyncWebSocket ws("/ws");
 
 void readSensor(){
   adc_light_value = analogRead(LIGHT_ADC_PIN);
@@ -100,34 +103,56 @@ void sendData() {
     Serial.println(httpResponseCode);
   
 }
+void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
+  AwsFrameInfo *info = (AwsFrameInfo*)arg;
+  if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
+    data[len] = 0;
+    Serial.printf("Received message: %s\n", (char*)data);
+  }
+}
+void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type,void *arg, uint8_t *data, size_t len) {
+switch (type) {
+case WS_EVT_CONNECT:
+Serial.printf("WebSocket client #%u connected from %s\n", 
+client->id(), 
+client->remoteIP().toString().c_str());
+break;
+case WS_EVT_DISCONNECT:
+Serial.printf("WebSocket client #%u disconnected\n", client->id());
+break;
+case WS_EVT_DATA:
+handleWebSocketMessage(arg, data, len);
+break;
+case WS_EVT_PONG:
+case WS_EVT_ERROR:
+break;
+}
+}
+void initWebSocket() {
+  ws.onEvent(onWebSocketEvent);
+  server.addHandler(&ws);
+}
 
-Ticker ticker1(sendData, 5000, 0, MILLIS);
+
+Ticker ticker1(sendData, 1000, 0, MILLIS);
 
 void setup() {
   Serial.begin(115200);
   WiFi.begin(ssid, password);
-  // while (WiFi.status() != WL_CONNECTED) {
-  //     delay(1000);
-  //     Serial.println(".");
-  //   }
-   //WiFi.enableIpV6();
-   //delay(5000);
-   Serial.println(WiFi.localIP());
+  Serial.println(WiFi.localIP());
   if (!mpu.begin()) {
     Serial.println("Sensor init failed");
     while (1)
       yield();
   }
   Serial.println("Found a MPU-6050 sensor");
-
-  // SSD1306_SWITCHCAPVCC = gen                                         erate display voltage from 3.3V internally
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3C for 128x32
     Serial.println(F("SSD1306 allocation failed"));
     for (;;)
       ; // Don't proceed, loop forever
   }
   display.display();
-  delay(500); // Pause for 2 seconds
+  delay(500); // Pause for 0.5 seconds
   display.setTextSize(1);
   display.setTextColor(WHITE);
   display.setRotation(0);
@@ -139,6 +164,12 @@ void setup() {
   digitalWrite(17 ,LOW);
   dht.begin();
   ticker1.start();
+  initWebSocket();
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(200, "text/plain", "Hello from ESP32");
+  });
+  server.begin();
+  
 }
 
 
@@ -146,4 +177,6 @@ void loop() {
   readSensor();
   displayData();
   ticker1.update();
+  ws.textAll(packData());
+  ws.cleanupClients();
 }
