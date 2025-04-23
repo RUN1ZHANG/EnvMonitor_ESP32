@@ -10,8 +10,9 @@
 #include <ESPAsyncWebServer.h>
 #include <AsyncTCP.h>
 
-#define LIGHT_ADC_PIN            33
-#define SOUND_ADC_PIN            32
+#define LIGHT_ADC_PIN            33//LIGHT1_ADC_PIN
+#define SOUND_ADC_PIN            32//LIGHT2_ADC_PIN
+#define PIR_ADC_PIN              35//PIR_ADC_PIN
 #define DHT_DATA_PIN              18
 //LUX=A/v^B
 int lux_a=1;//LUX转换参数
@@ -25,12 +26,12 @@ float sound;
 int humidity;
 float temperature;
 sensors_event_t a, g, temp;
-const char* ssid = "Ax3000T";
-const char* password = "123zr123";
-const char* serverUrl = "http://192.168.31.95:3232/data"; // 服务器地址（局域网）
-// const char* ssid = "Xiaomi 14";
+// const char* ssid = "Ax3000T";
 // const char* password = "123zr123";
-// const char* serverUrl = "http://192.168.138.188:3232/data"; // Macbook地址（连接Xiaomi 14）
+// const char* serverUrl = "http://192.168.31.95:3232/data"; // 服务器地址（局域网）
+const char* ssid = "Xiaomi 14";
+const char* password = "123zr123";
+const char* serverUrl = "http://192.168.121.188:3232/data"; // Macbook地址（连接Xiaomi 14）
 DHT dht(DHT_DATA_PIN,DHT11);
 Adafruit_MPU6050 mpu;
 Adafruit_SSD1306 display = Adafruit_SSD1306(128, 64, &Wire);
@@ -139,6 +140,10 @@ Ticker ticker1(sendData, 1000, 0, MILLIS);
 void setup() {
   Serial.begin(115200);
   WiFi.begin(ssid, password);
+  while(WiFi.status() != WL_CONNECTED){
+    Serial.println(".");
+    delay(100);
+  }
   Serial.println(WiFi.localIP());
   if (!mpu.begin()) {
     Serial.println("Sensor init failed");
