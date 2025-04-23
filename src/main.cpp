@@ -26,13 +26,13 @@ float sound;
 int humidity;
 float temperature;
 sensors_event_t a, g, temp;
-// const char* ssid = "Ax3000T";
-// const char* password = "123zr123";
-// const char* serverUrl = "http://192.168.31.95:3232/data"; // 服务器地址（局域网）
-const char* ssid = "Xiaomi 14";
+const char* ssid = "Ax3000T";
 const char* password = "123zr123";
-const char* serverUrl = "http://192.168.121.188:3232/data"; // Macbook地址（连接Xiaomi 14）
-DHT dht(DHT_DATA_PIN,DHT11);
+const char* serverUrl = "http://192.168.31.95:3232/data"; // 服务器地址（局域网）
+// const char* ssid = "Xiaomi 14";
+// const char* password = "123zr123";
+// const char* serverUrl = "http://192.168.121.188:3232/data"; // Macbook地址（连接Xiaomi 14）
+//DHT dht(DHT_DATA_PIN,DHT11);
 Adafruit_MPU6050 mpu;
 Adafruit_SSD1306 display = Adafruit_SSD1306(128, 64, &Wire);
 AsyncWebServer server(80);
@@ -44,8 +44,8 @@ void readSensor(){
   lux = lux_a/pow(voltage_light,lux_b);
   adc_mic_value = analogRead(SOUND_ADC_PIN);
   voltage_mic = adc_mic_value * (3.3/4095.0);
-  humidity = dht.readHumidity();
-  temperature = dht.readTemperature();
+  //humidity = dht.readHumidity();
+  //temperature = dht.readTemperature();
   mpu.getEvent(&a, &g, &temp);
 }
 void displayData(){
@@ -167,7 +167,7 @@ void setup() {
   digitalWrite(5,HIGH);
   pinMode(17,OUTPUT);
   digitalWrite(17 ,LOW);
-  dht.begin();
+  //dht.begin();
   ticker1.start();
   initWebSocket();
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
